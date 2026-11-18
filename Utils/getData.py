@@ -1,6 +1,4 @@
-import os
-import re
-from functools import lru_cache
+
 from pathlib import Path
 
 import torch
@@ -8,10 +6,12 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 from torchvision import transforms
 
-ROOT = Path(__file__).resolve().parent.parent          # folder project (isi train.py, test.py)
-DATASET_DIR = ROOT / "Dataset"
-ORIG_DIR = DATASET_DIR / "Original Images"
-AUG_DIR = DATASET_DIR / "Augmented Images"
+# --------------------------------------------------------------------------- #
+# Path
+# --------------------------------------------------------------------------- #
+ROOT = Path(__file__).resolve().parent.parent          # .../PROJECT_2
+ORIG_DIR = ROOT / "Original Images" / "FOLDS"
+AUG_DIR = ROOT / "Augmented Images" / "FOLDS_AUG"
 
 IMG_EXT = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 NUM_FOLDS = 5
@@ -21,36 +21,33 @@ MEAN = (0.5, 0.5, 0.5)
 STD = (0.5, 0.5, 0.5)
 
 
+# --------------------------------------------------------------------------- #
 # Helper path
-@lru_cache(maxsize=None)
-def find_split(root: str, fold: int, split: str) -> Path:
-    """Cari folder <split> (Train/Valid/Test) milik fold ke-<fold> di dalam <root>.
-    Tahan terhadap perbedaan nama folder (Fold1, fold1, fold1_AUG, folder bersarang)."""
-    pattern = re.compile(rf"fold_?{fold}(?!\d)", re.IGNORECASE)
-    for path, _, _ in os.walk(root):
-        rel = os.path.relpath(path, root).replace("\\", "/")
-        if os.path.basename(path).lower() == split.lower() and pattern.search(rel):
-            return Path(path)
-    raise FileNotFoundError(f"Folder '{split}' untuk fold {fold} tidak ditemukan di {root}")
-
-
+# --------------------------------------------------------------------------- #
 def orig_split_dir(fold: int, split: str) -> Path:
     """split: 'Train' | 'Valid' | 'Test'"""
-    return find_split(str(ORIG_DIR), fold, split)
+    return ORIG_DIR / f"fold{fold}" / split
 
 
 def aug_train_dir(fold: int) -> Path:
-    return find_split(str(AUG_DIR), fold, "Train")
+    return AUG_DIR / f"fold{fold}_AUG" / "Train"
 
 
 def get_class_names(fold: int = 1):
     """Nama kelas diambil dari nama subfolder (diurutkan alfabetis)."""
     d = orig_split_dir(fold, "Train")
+    if not d.is_dir():
+        raise FileNotFoundError(f"Folder tidak ditemukan: {d}")
     return sorted(p.name for p in d.iterdir() if p.is_dir())
 
 
+# --------------------------------------------------------------------------- #
 # Dataset
+# --------------------------------------------------------------------------- #
 class MpoxDataset(Dataset):
+    """Dataset gambar dengan struktur  root/<nama_kelas>/<gambar>.
+    Bisa menggabungkan beberapa root (mis. original Train + augmented Train)."""
+
     def __init__(self, roots, class_names, transform=None):
         self.class_names = list(class_names)
         self.class_to_idx = {c: i for i, c in enumerate(self.class_names)}
@@ -87,7 +84,9 @@ class MpoxDataset(Dataset):
         return img, label
 
 
+# --------------------------------------------------------------------------- #
 # Pre-processing
+# --------------------------------------------------------------------------- #
 def get_transforms(img_size: int = 128):
     """
     Train : resize -> flip -> rotasi kecil -> color jitter ringan -> tensor -> normalisasi
@@ -111,6 +110,9 @@ def get_transforms(img_size: int = 128):
     return train_tf, eval_tf
 
 
+# --------------------------------------------------------------------------- #
+# Dataloader
+# --------------------------------------------------------------------------- #
 def compute_class_weights(targets, num_classes):
     """Bobot kelas berbanding terbalik dengan frekuensi (untuk CrossEntropyLoss)."""
     counts = torch.bincount(torch.tensor(targets), minlength=num_classes).float()
@@ -121,6 +123,10 @@ def compute_class_weights(targets, num_classes):
 def get_dataloaders(fold: int, img_size: int = 128, batch_size: int = 32,
                     num_workers: int = 4, use_augmented: bool = True,
                     use_sampler: bool = False):
+    """
+    Mengembalikan dict berisi:
+      train_loader, valid_loader, test_loader, class_names, class_weights
+    """
     class_names = get_class_names(fold)
     train_tf, eval_tf = get_transforms(img_size)
 
@@ -137,6 +143,7 @@ def get_dataloaders(fold: int, img_size: int = 128, batch_size: int = 32,
 
     class_weights = compute_class_weights(train_ds.targets, len(class_names))
 
+    # Opsi: WeightedRandomSampler -> tiap batch berisi kelas yang lebih seimbang
     sampler = None
     if use_sampler:
         sample_w = [class_weights[t].item() for t in train_ds.targets]
@@ -164,7 +171,7 @@ def get_dataloaders(fold: int, img_size: int = 128, batch_size: int = 32,
 
 
 def get_test_loader(fold: int, img_size: int = 128, batch_size: int = 32, num_workers: int = 4):
-    """Hanya test loader (dipakai test.py)."""
+    """Hanya test loader (dipakai Tes.py)."""
     class_names = get_class_names(fold)
     _, eval_tf = get_transforms(img_size)
     test_ds = MpoxDataset([orig_split_dir(fold, "Test")], class_names, eval_tf)
@@ -173,6 +180,9 @@ def get_test_loader(fold: int, img_size: int = 128, batch_size: int = 32, num_wo
     return loader, class_names
 
 
+# --------------------------------------------------------------------------- #
+# Cek cepat
+# --------------------------------------------------------------------------- #
 if __name__ == "__main__":
     print(f"ROOT : {ROOT}")
     names = get_class_names(1)
