@@ -34,14 +34,14 @@ python test.py
 ## Preprocessing
 (isi: resize 128x128, konversi RGB, CLAHE, normalisasi 0-1)
 
-## Hasil Training
+## Hasil Training ALGORITMA 1
 ![training](Algoritma_1/Results/training_fold1.png)
 ![training](Algoritma_1/Results/training_fold2.png)
 ![training](Algoritma_1/Results/training_fold3.png)
 ![training](Algoritma_1/Results/training_fold4.png)
 ![training](Algoritma_1/Results/training_fold5.png)
 
-## Hasil Testing (rerata 5-fold)
+## Hasil Testing (rerata 5-fold) ALGORITMA 1
 | Metrik | Nilai | Std |
 |---|---|---|
 | Accuracy | 0.4905 | 0.0941 |
