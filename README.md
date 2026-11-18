@@ -36,6 +36,10 @@ python test.py
 
 ## Hasil Training
 ![training](Algoritma_1/Results/training_fold1.png)
+![training](Algoritma_1/Results/training_fold2.png)
+![training](Algoritma_1/Results/training_fold3.png)
+![training](Algoritma_1/Results/training_fold4.png)
+![training](Algoritma_1/Results/training_fold5.png)
 
 ## Hasil Testing (rerata 5-fold)
 | Metrik | Nilai | Std |
