@@ -35,7 +35,7 @@ python test.py
 (isi: resize 128x128, konversi RGB, CLAHE, normalisasi 0-1)
 
 ## Hasil Training
-![training](Results/training_fold1.png)
+![training](Algoritma_1/Results/training_fold1.png)
 
 ## Hasil Testing (rerata 5-fold)
 | Metrik | Nilai | Std |
@@ -46,7 +46,7 @@ python test.py
 | F1 | 0.4880 | 0.0852 |
 | ROC-AUC | 0.6982 | 0.0509 |
 
-![confusion matrix](Results/confusion_matrix.png)
+![confusion matrix](Algoritma_1/Results/confusion_matrix.png)
 
 ## Analisis
 (isi: kelas mana yang sering salah, overfitting atau tidak, dll.)
