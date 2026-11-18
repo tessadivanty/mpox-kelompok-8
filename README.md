@@ -93,10 +93,9 @@ Tabel berikut merangkum performa rata-rata ($\text{Mean} \pm \text{Std}$) pada s
 
 ## Instalasi & Cara Menjalankan
 
-### 1. Instalasi Dependensi
-Pastikan Python $\ge 3.9$ sudah terpasang, lalu instal pustaka yang dibutuhkan:
+### 1. Instal Library
 ```bash
-pip install torch torchvision numpy pandas scikit-learn matplotlib seaborn pillow tabulate
+pip install -r requirements.txt
 ```
 
 ### 2. Verifikasi Dataset
