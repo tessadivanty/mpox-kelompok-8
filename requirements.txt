@@ -8,3 +8,6 @@ seaborn
 scikit-learn
 scikit-image
 tabulate
+sys
+argparse
+csv
