@@ -9,14 +9,14 @@ Proyek ini mengimplementasikan dan membandingkan performa tiga arsitektur *Deep 
 Seluruh model menggunakan pipeline prapemrosesan dan partisi *5-fold cross-validation* yang seragam (`Utils/getData.py`), dengan tiga variasi arsitektur model:
 
 1. **Algoritma 1 — `DoubleSimpleCNN` (Custom 2-Stage CNN)**
-   * **Arsitektur:** Dua *stage* konvolusi berurutan dengan kernel $5 \times 5$ (`3 -> 20 -> 50 -> 100 -> 100` kanal), `BatchNorm2d`, `ReLU`, `MaxPool2d(2)`, serta *classifier* `Linear(6400 -> 128 -> 6)` dengan `Dropout(0.5)` (~1,22 juta parameter).
-   * **Konfigurasi:** Input $128 \times 128$, optimizer `Adam` (`lr=3e-4`, `weight_decay=1e-4`), weighted `CrossEntropyLoss`, dan *early stopping* berdasarkan `val_loss`.
+   * **Arsitektur:** Dua *stage* konvolusi berurutan dengan kernel $5 \times 5$ (`3 -> 20 -> 50 -> 100 -> 100` kanal), `BatchNorm2d`, `ReLU`, `MaxPool2d(2)`, serta *classifier* `Linear(6400 -> 128 -> 6)` dengan `Dropout(0.5)`.
+   * **Konfigurasi:** Input $128 \times 128$, optimizer `Adam` (`lr=3e-4`, `weight_decay=1e-4`), weighted `CrossEntropyLoss`, dan *early stopping* berdasarkan `val_f1`.
 2. **Algoritma 2 — `SimpleCNN` 4-Blok (Modified Deep Custom CNN)**
-   * **Arsitektur:** Empat blok konvolusi ganda dengan kernel $3 \times 3$ (`3 -> 32 -> 64 -> 128 -> 256` kanal), `BatchNorm2d`, `ReLU`, `MaxPool2d(2)`, `Dropout2d` bertingkat (`0.05`–`0.20`), `AdaptiveAvgPool2d(1)` (*Global Average Pooling*), serta *classifier* `Linear(256 -> 128 -> 6)` (~1,21 juta parameter).
-   * **Konfigurasi:** Input $128 \times 128$, optimizer `AdamW` (`lr=1e-3`), `ReduceLROnPlateau`, *label smoothing* (`0.05`), dan *early stopping* berdasarkan `val_f1` (*macro*).
-3. **Algoritma 3 — `EfficientNetV2-S` (*Transfer Learning*)**
-   * **Arsitektur:** Backbone `efficientnet_v2_s` dengan bobot *pretrained* `IMAGENET1K_V1` dan modifikasi lapisan akhir `classifier[1]` menjadi `Linear(1280 -> 6)` (~20,2 juta parameter).
-   * **Konfigurasi:** Input $224 \times 224$, optimizer `AdamW` (`lr=3e-4`), `CosineAnnealingLR`, weighted `CrossEntropyLoss`, *mixed precision* (AMP), dan *early stopping* berdasarkan `val_f1` (*macro*).
+   * **Arsitektur:** Empat blok konvolusi ganda dengan kernel $3 \times 3$ (`3 -> 32 -> 64 -> 128 -> 256` kanal), `BatchNorm2d`, `ReLU`, `MaxPool2d(2)`, `Dropout2d` bertingkat (`0.05`–`0.20`), `AdaptiveAvgPool2d(1)` (*Global Average Pooling*), serta *classifier* `Linear(256 -> 128 -> 6)`.
+   * **Konfigurasi:** Input $128 \times 128$, optimizer `AdamW` (`lr=1e-3`), `ReduceLROnPlateau`, *label smoothing* (`0.05`), dan *early stopping* berdasarkan `val_f1`.
+3. **Algoritma 3 — `EfficientNetV2-S`**
+   * **Arsitektur:** Backbone `efficientnet_v2_s` dengan bobot *pretrained* `IMAGENET1K_V1` dan modifikasi lapisan akhir `classifier[1]` menjadi `Linear(1280 -> 6)`.
+   * **Konfigurasi:** Input $128 \times 128$, optimizer `AdamW` (`lr=3e-4`), `CosineAnnealingLR`, weighted `CrossEntropyLoss`, *mixed precision* (AMP), dan *early stopping* berdasarkan `val_f1`.
 
 ---
 
@@ -45,15 +45,7 @@ Partisi **Train** menggabungkan direktori `Original Images` dan `Augmented Image
 
 ## Hasil Evaluasi 5-Fold Cross-Validation
 
-Tabel berikut merangkum performa rata-rata ($\text{Mean} \pm \text{Std}$) pada set pengujian (*Test Set*) di seluruh 5 *fold*:
 
-| Model | Resolusi | Accuracy | Precision | Recall | F1-Score | ROC-AUC (OvR) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Algoritma 1: `DoubleSimpleCNN`** | $128 \times 128$ | $0.4905 \pm 0.0928$ | $0.5449 \pm 0.0548^*$ | $0.4905 \pm 0.0928^*$ | $0.4880 \pm 0.0853^*$ | $0.7982 \pm 0.0508$ |
-| **Algoritma 2: `SimpleCNN` (4-Blok)** | $128 \times 128$ | $0.6919 \pm 0.0963$ | $0.7010 \pm 0.1278$ | $0.6830 \pm 0.1099$ | $0.6783 \pm 0.1138$ | $0.9020 \pm 0.0375$ |
-| **Algoritma 3: `EfficientNetV2-S`** | $224 \times 224$ | **$0.7756 \pm 0.0403$** | **$0.7820 \pm 0.0739$** | **$0.7747 \pm 0.0417$** | **$0.7635 \pm 0.0539$** | **$0.9475 \pm 0.0072$** |
-
-> *Catatan: Metrik Precision, Recall, dan F1-Score pada Algoritma 1 menggunakan `weighted average`, sedangkan Algoritma 2 dan Algoritma 3 menggunakan `macro average` (pada Algoritma 2, nilai `weighted F1` adalah $0.6935 \pm 0.0944$).*
 
 ### Kesimpulan Utama
 * **Transfer Learning Unggul Signifikan:** `EfficientNetV2-S` mencapai akurasi rata-rata tertinggi (**77,56%**) dan ROC-AUC **0,9475** dengan stabilitas antar-fold terbaik ($\pm 4,03\%$).
