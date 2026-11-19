@@ -100,7 +100,7 @@ Rata-rata performa pengujian pada data uji di seluruh **5-Fold Cross-Validation*
      ```
    * **Algoritma 2 (`SimpleCNN` 4-Blok Ganda):**
      ```bash
-     python "Train (1).py" --img_size 128 --epochs 50 --batch_size 32
+     python "Train.py" --img_size 128 --epochs 50 --batch_size 32
      python Tes.py
      ```
    * **Algoritma 3 (`EfficientNetV2-S`):**
