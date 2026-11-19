@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 
 from Models.EfficientNetV2 import build_efficientnetv2
-from Utils.getdata import NUM_FOLDS, get_dataloaders
+from Utils.getData import NUM_FOLDS, get_dataloaders
 from Utils.metrics import compute_metrics, plot_confusion_matrix, plot_history, predict
 
 
