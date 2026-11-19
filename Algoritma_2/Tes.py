@@ -155,7 +155,7 @@ def main():
         print("Tidak ada model yang dievaluasi.")
         return
 
-    # ---------------- Rata-rata 5-fold ---------------- #
+    # Rata-rata 5-fold 
     keys = list(next(iter(all_metrics.values())).keys())
     mean = {k: float(np.nanmean([m[k] for m in all_metrics.values()])) for k in keys}
     std = {k: float(np.nanstd([m[k] for m in all_metrics.values()])) for k in keys}
