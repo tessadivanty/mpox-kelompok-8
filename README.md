@@ -1,116 +1,117 @@
-# Klasifikasi Citra Lesi Kulit Monkeypox (6 Kelas) Menggunakan Perbandingan Arsitektur CNN dan EfficientNetV2
+# Klasifikasi Citra Penyakit Kulit Mpox dan Ruam Serupa Menggunakan Convolutional Neural Network (CNN) — Kelompok 8
 
-Proyek ini mengimplementasikan dan membandingkan performa tiga arsitektur *Deep Learning* berbasis PyTorch untuk klasifikasi multi-kelas citra lesi kulit (**6 kelas**: *Chickenpox*, *Cowpox*, *HFMD*, *Healthy*, *Measles*, dan *Monkeypox*) menggunakan skema evaluasi **5-Fold Cross-Validation**.
-
----
-
-## Ringkasan Eksperimen & Model
-
-Seluruh model menggunakan pipeline prapemrosesan dan partisi *5-fold cross-validation* yang seragam (`Utils/getData.py`), dengan tiga variasi arsitektur model:
-
-1. **Algoritma 1 — `DoubleSimpleCNN` (Custom 2-Stage CNN)**
-   * **Arsitektur:** Dua *stage* konvolusi berurutan dengan kernel $5 \times 5$ (`3 -> 20 -> 50 -> 100 -> 100` kanal), `BatchNorm2d`, `ReLU`, `MaxPool2d(2)`, serta *classifier* `Linear(6400 -> 128 -> 6)` dengan `Dropout(0.5)`.
-   * **Konfigurasi:** Input $128 \times 128$, optimizer `Adam` (`lr=3e-4`, `weight_decay=1e-4`), weighted `CrossEntropyLoss`, dan *early stopping* berdasarkan `val_f1`.
-2. **Algoritma 2 — `SimpleCNN` 4-Blok (Modified Deep Custom CNN)**
-   * **Arsitektur:** Empat blok konvolusi ganda dengan kernel $3 \times 3$ (`3 -> 32 -> 64 -> 128 -> 256` kanal), `BatchNorm2d`, `ReLU`, `MaxPool2d(2)`, `Dropout2d` bertingkat (`0.05`–`0.20`), `AdaptiveAvgPool2d(1)` (*Global Average Pooling*), serta *classifier* `Linear(256 -> 128 -> 6)`.
-   * **Konfigurasi:** Input $128 \times 128$, optimizer `AdamW` (`lr=1e-3`), `ReduceLROnPlateau`, *label smoothing* (`0.05`), dan *early stopping* berdasarkan `val_f1`.
-3. **Algoritma 3 — `EfficientNetV2-S`**
-   * **Arsitektur:** Backbone `efficientnet_v2_s` dengan bobot *pretrained* `IMAGENET1K_V1` dan modifikasi lapisan akhir `classifier[1]` menjadi `Linear(1280 -> 6)`.
-   * **Konfigurasi:** Input $128 \times 128$, optimizer `AdamW` (`lr=3e-4`), `CosineAnnealingLR`, weighted `CrossEntropyLoss`, *mixed precision* (AMP), dan *early stopping* berdasarkan `val_f1`.
+Repositori ini berisi kode implementasi, skenario pelatihan, dan hasil evaluasi komparatif tiga arsitektur *Deep Learning* berbasis *Convolutional Neural Network* (CNN) untuk klasifikasi enam kelas citra penyakit kulit (**Chickenpox, Cowpox, HFMD, Healthy, Measles, dan Monkeypox**) menggunakan protokol *5-Fold Cross-Validation*.
 
 ---
 
-## Dataset & Pipeline Preprocessing
+## 🎯 Gambaran Umum
 
-### 1. Distribusi Kelas Data Uji (Total 5-Fold = 364 Citra Asli)
-Partisi **Train** menggabungkan direktori `Original Images` dan `Augmented Images`, sedangkan partisi **Valid** dan **Test** menggunakan citra murni dari `Original Images` untuk mencegah *data leakage*.
+Deteksi dini penyakit **Mpox (*Monkeypox*)** secara visual sering menghadapi kendala karena kemiripan morfologi lesi kulit dengan penyakit ruam lainnya. Untuk membandingkan performa tiga arsitektur model secara adil (*apple-to-apple*) pada kondisi distribusi data yang tidak seimbang (*class imbalance*), eksperimen ini menerapkan:
+
+1. **Resolusi Masukan Seragam:** Seluruh citra masukan untuk ketiga algoritma diseragamkan ke ukuran $128 \times 128$ piksel.
+2. **Penanganan Ketidakseimbangan Kelas:** Menggunakan pembobotan kelas (*class weighting*) pada fungsi **Weighted Cross-Entropy Loss** berdasarkan frekuensi sampel tiap kelas pada data pelatihan.
+3. **Early Stopping Berbasis Validasi Macro F1:** Pelatihan dihentikan secara otomatis apabila nilai *validation macro F1-score* tidak membaik selama **10 epoch berturut-turut** (*patience* $= 10$) guna memaksimalkan performa pada kelas minoritas.
+4. **Evaluasi Metrik Macro:** Seluruh metrik evaluasi dihitung menggunakan rata-rata makro (*macro-averaging*) di atas skema **5-Fold Cross-Validation**.
+
+---
+
+## 📊 Karakteristik Dataset
+
+Dataset mencakup 6 kategori klinis dengan total **364 citra pengujian** yang terdistribusi pada lima lipatan (*fold*):
 
 | Kelas | Fold 1 | Fold 2 | Fold 3 | Fold 4 | Fold 5 | Total Uji | Proporsi |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Monkeypox** | 27 | 31 | 22 | 27 | 18 | **125** | 34,34% |
-| **HFMD** | 16 | 20 | 16 | 15 | 15 | **82** | 22,53% |
-| **Healthy** | 9 | 11 | 11 | 9 | 10 | **50** | 13,74% |
-| **Chickenpox** | 9 | 11 | 6 | 9 | 7 | **42** | 11,54% |
-| **Cowpox** | 7 | 4 | 4 | 13 | 7 | **35** | 9,62% |
-| **Measles** | 6 | 5 | 5 | 8 | 6 | **30** | 8,24% |
+| **Chickenpox** | 9 | 11 | 6 | 9 | 7 | 42 | 11,54% |
+| **Cowpox** | 7 | 4 | 4 | 13 | 7 | 35 | 9,61% |
+| **HFMD** | 16 | 20 | 16 | 15 | 15 | 82 | 22,53% |
+| **Healthy** | 9 | 11 | 11 | 9 | 10 | 50 | 13,74% |
+| **Measles** | 6 | 5 | 5 | 8 | 6 | 30 | 8,24% |
+| **Monkeypox** | 27 | 31 | 22 | 27 | 18 | 125 | 34,34% |
 | **Total** | **74** | **82** | **64** | **81** | **63** | **364** | **100,00%** |
 
-### 2. Tahapan Preprocessing (`Utils/getData.py`)
-* **Konversi & Resize:** Seluruh gambar dikonversi ke RGB dan diubah ukurannya ke $128 \times 128$ (Model 1 & 2) atau $224 \times 224$ (Model 3).
-* **Augmentasi On-the-Fly (khusus Train):** `RandomHorizontalFlip(0.5)`, `RandomVerticalFlip(0.2)`, `RandomRotation(15)`, dan `ColorJitter(brightness=0.2, contrast=0.2, saturation=0.15, hue=0.02)`.
-* **Normalisasi:** Rentang piksel $[-1, 1]$ dengan `MEAN = (0.5, 0.5, 0.5)` dan `STD = (0.5, 0.5, 0.5)`.
-* **Penanganan Imbalance:** Pembobotan kelas otomatis berbasis *inverse class frequency* pada `CrossEntropyLoss`.
+---
+
+## ⚙️ Metodologi & Protokol Eksperimen
+
+### 1. Pra-pemrosesan & Augmentasi (`Utils/getData.py`)
+
+* **Data Pelatihan (`Train`):** Menggabungkan `Original Images` dan `Augmented Images` (`use_augmented=True`), ditambah augmentasi *on-the-fly*:
+  * `Resize((128, 128))`
+  * `RandomHorizontalFlip(0.5)` & `RandomVerticalFlip(0.2)`
+  * `RandomRotation(15)`
+  * `ColorJitter(brightness=0.2, contrast=0.2, saturation=0.15, hue=0.02)`
+  * `ToTensor()` & `Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))`
+* **Data Validasi & Pengujian (`Valid` & `Test`):** Hanya melalui proses `Resize((128, 128))`, `ToTensor()`, dan `Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))` tanpa transformasi acak.
+
+### 2. Pembobotan Kelas & Kriteria Berhenti
+
+* **Bobot Kelas:** $w_c = \frac{N}{C \times N_c}$ diterapkan pada `nn.CrossEntropyLoss(weight=weights)` untuk menyeimbangkan penalti gradien antara kelas mayoritas dan minoritas.
+* **Early Stopping:** Memantau peningkatan `valid_f1` (*macro F1-score*) dengan `patience = 10` dan batas maksimal `50` *epoch*.
 
 ---
 
-## Hasil Evaluasi 5-Fold Cross-Validation
+## 🧠 Detail Arsitektur Model
 
-
-
-### Kesimpulan Utama
-* **Transfer Learning Unggul Signifikan:** `EfficientNetV2-S` mencapai akurasi rata-rata tertinggi (**77,56%**) dan ROC-AUC **0,9475** dengan stabilitas antar-fold terbaik ($\pm 4,03\%$).
-* **Dampak Desain Arsitektur CNN Kustom:** Penambahan kedalaman menjadi 4 blok konvolusi ganda $3 \times 3$ disertai *Global Average Pooling* dan *label smoothing* pada Algoritma 2 meningkatkan akurasi sebesar **+20,14%** dibandingkan `DoubleSimpleCNN`.
-* **Tantangan Klasifikasi:** Kesalahan klasifikasi paling sering terjadi pada pasangan lesi vesikular yang memiliki kemiripan morfologi visual tinggi, yaitu antara **Monkeypox**, **Chickenpox**, dan **Cowpox**.
-
----
-
-## Struktur Direktori Repositori
-
-```text
-├── Dataset/
-│   ├── Original Images/         # Citra asli per Fold (Fold1..Fold5 -> Train/Valid/Test)
-│   └── Augmented Images/        # Citra augmentasi luring per Fold (Train)
-├── Utils/
-│   ├── getData.py               # Dataset loader, transformasi augmentasi, dan class weights
-│   └── metrics.py               # Fungsi perhitungan metrik & visualisasi (Algoritma 3)
-├── Algoritma_1/
-│   ├── Models/CNN.py            # Arsitektur DoubleSimpleCNN
-│   ├── train.py                 # Skrip training 5-fold Algoritma 1
-│   ├── test.py                  # Skrip evaluasi & confusion matrix Algoritma 1
-│   └── Results/                 # Metrik CSV, kurva loss, dan confusion matrix
-├── Algoritma_2/
-│   ├── Models/CNN.py            # Arsitektur SimpleCNN 4-Blok + GAP
-│   ├── Train.py                 # Skrip training 5-fold Algoritma 2
-│   ├── Tes.py                   # Skrip evaluasi, classification report, & ROC curve
-│   └── Results/                 # Summary metrics, report per fold, dan visualisasi
-├── Algoritma_3/
-│   ├── Models/EfficientNetV2.py # Builder model EfficientNetV2-S pretrained
-│   ├── traintes.py              # Skrip training & testing 5-fold Algoritma 3
-│   └── results/efficientnetv2/  # Metrik JSON/CSV, kurva training, dan confusion matrix
-├── requirements.txt
-└── README.md
-```
+| Aspek | Algoritma 1 (`DoubleSimpleCNN`) | Algoritma 2 (`SimpleCNN` 4-Blok) | Algoritma 3 (`EfficientNetV2-S`) |
+| :--- | :--- | :--- | :--- |
+| **Pendekatan** | CNN Kustom 2-Stage | CNN Kustom 4-Blok Konvolusi Ganda | *Transfer Learning* (*ImageNet-1K*) |
+| **Struktur Ekstraktor Fitur** | 2 Stage $\times$ 2 Blok (`Conv2d 5×5` $\rightarrow$ `BN` $\rightarrow$ `ReLU` $\rightarrow$ `MaxPool 2×2`), kanal: `20 -> 50 -> 100 -> 100` | 4 Blok (`[Conv2d 3×3 -> BN -> ReLU] × 2 -> MaxPool 2×2 -> Dropout2d`), kanal: `32 -> 64 -> 128 -> 256` | Backbone `efficientnet_v2_s` (*Fused-MBConv* & *MBConv* + *Squeeze-and-Excitation*) |
+| **Pooling & Classifier** | `Flatten(6400)` $\rightarrow$ `Dropout(0.5)` $\rightarrow$ `Linear(128)` $\rightarrow$ `ReLU` $\rightarrow$ `Dropout(0.5)` $\rightarrow$ `Linear(6)` | `AdaptiveAvgPool2d(1)` $\rightarrow$ `Dropout(0.4)` $\rightarrow$ `Linear(128)` $\rightarrow$ `ReLU` $\rightarrow$ `Dropout(0.4)` $\rightarrow$ `Linear(6)` | Modifikasi `classifier[1]` menjadi `Linear(1280, 6)` |
+| **Optimizer & LR** | `Adam` (`lr=3e-4`, `weight_decay=1e-4`) | `AdamW` (`lr=1e-3`, `weight_decay=1e-4`) + `ReduceLROnPlateau` + *Label Smoothing* (`0.05`) | `AdamW` (`lr=3e-4`, `weight_decay=1e-4`) + `CosineAnnealingLR` (`T_max=50`) |
+| **Resolusi Input** | $128 \times 128$ | $128 \times 128$ | $128 \times 128$ (`--img_size 128`) |
 
 ---
 
-## Instalasi & Cara Menjalankan
+## 📈 Ringkasan Hasil Evaluasi
 
-### 1. Instal Library
-```bash
-pip install -r requirements.txt
-```
+Rata-rata performa pengujian pada data uji di seluruh **5-Fold Cross-Validation** menggunakan metrik **Macro**:
 
-### 2. Verifikasi Dataset
-Pastikan folder `Dataset/Original Images` dan `Dataset/Augmented Images` berada di direktori utama proyek, lalu jalankan:
-```bash
-python Utils/getData.py
-```
+| Model | Akurasi | Presisi (Macro) | Recall (Macro) | F1-Score (Macro) | ROC-AUC |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Algoritma 1 (`DoubleSimpleCNN`)** | 0,6302 | 0,6585 | 0,5998 | 0,6015 | 0,8765 |
+| **Algoritma 2 (`SimpleCNN` 4-Blok Ganda)** | 0,6919 | 0,7010 | 0,6830 | 0,6783 | 0,9020 |
+| **Algoritma 3 (`EfficientNetV2-S`)** | **0,7709** | **0,7523** | **0,7672** | **0,7491** | **0,9444** |
 
-### 3. Menjalankan Training & Evaluasi Tiap Algoritma
+> **Kesimpulan Utama:** Arsitektur *transfer learning* **EfficientNetV2-S** (Algoritma 3) memberikan performa tertinggi dan paling konsisten di seluruh lipatan pengujian (mencapai puncak akurasi **0,8889** dan *macro F1-score* **0,8657** pada Fold 5), membuktikan efektivitas kombinasi bobot pra-latih *ImageNet-1K*, *Weighted Cross-Entropy Loss*, dan *early stopping* berbasis *valid macro F1*.
 
-* **Algoritma 1 (`DoubleSimpleCNN`):**
-  ```bash
-  python Algoritma_1/train.py
-  python Algoritma_1/test.py
-  ```
+---
 
-* **Algoritma 2 (`SimpleCNN` 4-Blok):**
-  ```bash
-  python Algoritma_2/Train.py --epochs 50 --batch_size 32 --img_size 128 --lr 1e-3
-  python Algoritma_2/Tes.py
-  ```
+## 🚀 Cara Instalasi & Menjalankan Proyek
 
-* **Algoritma 3 (`EfficientNetV2-S`):**
-  ```bash
-  python Algoritma_3/traintes.py --epochs 50 --batch_size 32 --img_size 128 --lr 3e-4 --patience 10
-  ```
+1. **Clone repositori ini:**
+   ```bash
+   git clone https://github.com/tessadivanty/mpox-kelompok-8.git
+   cd mpox-kelompok-8
+   ```
+
+2. **Instal seluruh dependensi dari `requirements.txt`:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Siapkan direktori dataset:**
+   Pastikan folder `Dataset/Original Images` dan `Dataset/Augmented Images` memiliki struktur sub-folder `Fold 1` hingga `Fold 5` dengan pembagian `Train`, `Valid`, dan `Test`.
+
+4. **Jalankan pelatihan dan pengujian masing-masing algoritma:**
+   * **Algoritma 1 (`DoubleSimpleCNN`):**
+     ```bash
+     python train.py
+     python test.py
+     ```
+   * **Algoritma 2 (`SimpleCNN` 4-Blok Ganda):**
+     ```bash
+     python "Train (1).py" --img_size 128 --epochs 50 --batch_size 32
+     python Tes.py
+     ```
+   * **Algoritma 3 (`EfficientNetV2-S`):**
+     ```bash
+     python traintes.py --img_size 128 --epochs 50 --batch_size 32
+     ```
+
+---
+
+## 👥 Anggota Kelompok 8
+
+* **`Tessagyani Divanty Tode`** — `108102500052`
+* **`Luqman Syarif Rahmadani`** — `108102530007`
+* **`Rayana Bintang Rahmanda`** — `108102500034`
