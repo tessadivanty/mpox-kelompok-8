@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
 from Models.CNN import SimpleCNN                    # noqa: E402
-from Utils.getdata import NUM_FOLDS, get_dataloaders  # noqa: E402
+from Utils.getData import NUM_FOLDS, get_dataloaders  # noqa: E402
 
 MODEL_DIR = ROOT / "Models"
 
