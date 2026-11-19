@@ -120,5 +120,5 @@ python Utils/getData.py
 
 * **Algoritma 3 (`EfficientNetV2-S`):**
   ```bash
-  python Algoritma_3/traintes.py --epochs 50 --batch_size 32 --img_size 224 --lr 3e-4 --patience 10
+  python Algoritma_3/traintes.py --epochs 50 --batch_size 32 --img_size 128 --lr 3e-4 --patience 10
   ```
