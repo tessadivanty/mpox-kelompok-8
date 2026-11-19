@@ -50,9 +50,9 @@ def main():
         row = {
             "fold": fold,
             "accuracy": accuracy_score(ground_truth, prediction),
-            "precision": precision_score(ground_truth, prediction, average='weighted', zero_division=0),
-            "recall": recall_score(ground_truth, prediction, average='weighted', zero_division=0),
-            "f1": f1_score(ground_truth, prediction, average='weighted', zero_division=0),
+            "precision": precision_score(ground_truth, prediction, average='macro', zero_division=0),
+            "recall": recall_score(ground_truth, prediction, average='macro', zero_division=0),
+            "f1": f1_score(ground_truth, prediction, average='macro', zero_division=0),
             "roc_auc": auc,
         }
         rows.append(row)
